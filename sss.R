@@ -4,8 +4,8 @@ kTileSize <- 20
 kBoardSizeInPixels <- kBoardSize * kTileSize
 
 # --- Snake initialization ---
-x <- c(3, 3, 3, 3)
-y <- c(2, 3, 4, 5)
+x <- c(3, 3, 3, 3, 3, 3, 3, 3, 3)
+y <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
 # Matrix with 2 columns (x and y) where rows are snake's segments
 # cbind -> column bind. It merges/zips two vectors(columns) to make one matrix
@@ -17,7 +17,7 @@ snake.last.action <<- "NO ACTION TAKEN YET"
 snake.moves.counter <<- 0
 
 # --- Drawing functions---
-drawBox <- function(x, y, filling){
+drawBox <- function(x, y, filling, color){
     # It takes grid coordinates and converts them into axis scale (imagine it as pixels)
     
     # Pair of x and y for opposite square's corners
@@ -27,7 +27,7 @@ drawBox <- function(x, y, filling){
     # Draw rectangle with filling
     rect(xleft = corner.bottom_left[1], ybottom = corner.bottom_left[2], 
          xright = corner.upper_right[1], ytop = corner.upper_right[2],
-         density = filling)
+         density = filling, col = color)
 }
 
 clearBoard <- function(){
@@ -56,8 +56,13 @@ drawSnake <- function(){
         x = snake.body.coordinates[row.index, 1]
         y = snake.body.coordinates[row.index, 2]
         
-        # NA - Black filling
-        drawBox(x, y, filling = NA)
+        # Head has different color
+        if(row.index == 1){
+            # NA - Black filling
+            drawBox(x, y, filling = NA, color = "red")
+        }else{
+            drawBox(x, y, filling = NA, color = "black")
+        }
     }
 }
 
@@ -73,35 +78,64 @@ crawl <- function(new.head.x, new.head.y){
 
 
 # --- Snake movement ---
+checkCollisions <- function(){
+    unique.snake.body.coordinates <- unique(snake.body.coordinates)
+    # If at least two snake's segments are in the same coordinates
+    # then body collision occured
+    if(nrow(unique.snake.body.coordinates) != nrow(snake.body.coordinates)){
+        stop("Game over! Body collision detected :(")
+    }
+}
+
 moveInDirection <- function(key){
     # Temporary variables
     head.x <- snake.body.coordinates[1, 1]
     head.y <- snake.body.coordinates[1, 2]
-    
+
     switch(key,
            w={
                print('W')
                new.head.x <- head.x
-               new.head.y <- head.y - 1
-               crawl(new.head.x, new.head.y)
+               
+               # Collision detection
+               # Don't allow for crossing the borders
+               # If collision occurs - abandon move
+               if(head.y > 1){
+                   new.head.y <- head.y - 1
+                   crawl(new.head.x, new.head.y)
+               }else{
+                   new.head.y <- head.y
+               }
            },
            s={
                print('S')
                new.head.x <- head.x
-               new.head.y <- head.y + 1
-               crawl(new.head.x, new.head.y)
+               if(head.y < kBoardSize){
+                   new.head.y <- head.y + 1
+                   crawl(new.head.x, new.head.y)
+               }else{
+                   new.head.y <- head.y
+               }
            },
            a={
                print('A')
-               new.head.x <- head.x - 1
                new.head.y <- head.y
-               crawl(new.head.x, new.head.y)
+               if(head.x > 1){
+                   new.head.x <- head.x - 1
+                   crawl(new.head.x, new.head.y)
+               }else{
+                   new.head.x <- head.x
+               }
            },
            d={
                print('D')
-               new.head.x <- head.x + 1
                new.head.y <- head.y
-               crawl(new.head.x, new.head.y)
+               if(head.x < kBoardSize){
+                   new.head.x <- head.x + 1
+                   crawl(new.head.x, new.head.y)
+               }else{
+                   new.head.x <- head.x
+               }
            },
            q={
                stop("Exiting game...")
@@ -110,6 +144,7 @@ moveInDirection <- function(key){
                # What happens when none of keys listed above were eneterd...
                # Leave empty
            })
+    checkCollisions()
 }
 
 readKeyboardInput <- function(){
@@ -133,7 +168,7 @@ readKeyboardInput <- function(){
 # Game loop
 repeat{
     clearBoard()
-    drawBoardGrid()
+    #drawBoardGrid()
     drawSnake()
     readKeyboardInput()
     
