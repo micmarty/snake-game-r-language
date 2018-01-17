@@ -47,11 +47,9 @@ clearBoard <- function(){
 }
 
 drawBoardGrid <- function(){
-    for(y in seq(from = 1, to = kBoardSize, by = 1)){
-        for(x in seq(from = 1, to = kBoardSize, by = 1)){
-            drawBox(x, y, filling = 0)
-        } 
-    }
+    rect(xleft = 0, ybottom = 0, 
+         xright = kBoardSizeInPixels, ytop = kBoardSizeInPixels,
+         density = 0, col = "black")
 }
 
 drawSnake <- function(){
@@ -130,8 +128,8 @@ moveInDirection <- function(key){
                new.head.x <- head.x
                
                # Collision detection
-               # Don't allow for crossing the borders
-               # If collision occurs - abandon move
+               # Allow for crossing the borders
+               # If collision occurs - teleport head to another side
                if(head.y > 1){
                    # Before move, check if that move would hit the food
                    if(checkFoodCollision(new.head.x, head.y - 1) == T){
@@ -143,7 +141,8 @@ moveInDirection <- function(key){
                        crawl(new.head.x, new.head.y)
                    }
                }else{
-                   new.head.y <- head.y
+                   new.head.y <- kBoardSize
+                   crawl(new.head.x, new.head.y)
                }
            },
            s={
@@ -157,7 +156,8 @@ moveInDirection <- function(key){
                        crawl(new.head.x, new.head.y)
                    }
                }else{
-                   new.head.y <- head.y
+                   new.head.y <- 1
+                   crawl(new.head.x, new.head.y)
                }
            },
            a={
@@ -171,7 +171,8 @@ moveInDirection <- function(key){
                        crawl(new.head.x, new.head.y)
                    }
                }else{
-                   new.head.x <- head.x
+                   new.head.x <- kBoardSize
+                   crawl(new.head.x, new.head.y)
                }
            },
            d={
@@ -185,7 +186,8 @@ moveInDirection <- function(key){
                        crawl(new.head.x, new.head.y)
                    }
                }else{
-                   new.head.x <- head.x
+                   new.head.x <- 1
+                   crawl(new.head.x, new.head.y)
                }
            },
            q={
@@ -220,10 +222,7 @@ readKeyboardInput <- function(){
 # Game loop
 repeat{
     clearBoard()
-    text(200, 0, "Use W, S, A, D to move and ENTER to accept/repeat last action")
-    
-    # Commented out because it slows down plotting...
-    # drawBoardGrid()
+    drawBoardGrid()
     drawSnake()
     drawFood()
     readKeyboardInput()
