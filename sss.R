@@ -4,8 +4,8 @@ kTileSize <- 20
 kBoardSizeInPixels <- kBoardSize * kTileSize
 
 # --- Snake initialization ---
-x <- c(3, 3, 3, 3, 3, 3, 3, 3, 3)
-y <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)
+x <- c(3, 3, 3)
+y <- c(1, 2, 3)
 
 # Matrix with 2 columns (x and y) where rows are snake's segments
 # cbind -> column bind. It merges/zips two vectors(columns) to make one matrix
@@ -15,6 +15,12 @@ snake.body.coordinates <<- cbind(x, y)
 # It allows to redo the last move by pressing ENTER 
 snake.last.action <<- "NO ACTION TAKEN YET" 
 snake.moves.counter <<- 0
+
+# --- Food initialization ---
+# Random 2-element vector (x and y)
+food.coordinates <- sample(1:kBoardSize, size = 2)
+food.x <<- food.coordinates[1]
+food.y <<- food.coordinates[2]
 
 # --- Drawing functions---
 drawBox <- function(x, y, filling, color){
@@ -66,6 +72,10 @@ drawSnake <- function(){
     }
 }
 
+drawFood <- function(){
+    drawBox(food.x, food.y, filling = NA, color = "green")
+}
+
 crawl <- function(new.head.x, new.head.y){
     # Add new head as first row (push to the front)
     snake.body.coordinates <<- rbind(c(new.head.x, new.head.y), snake.body.coordinates)
@@ -78,20 +88,40 @@ crawl <- function(new.head.x, new.head.y){
 
 
 # --- Snake movement ---
-checkCollisions <- function(){
+checkBodyCollisions <- function(){
     unique.snake.body.coordinates <- unique(snake.body.coordinates)
     # If at least two snake's segments are in the same coordinates
     # then body collision occured
     if(nrow(unique.snake.body.coordinates) != nrow(snake.body.coordinates)){
+        title("Game over!")
         stop("Game over! Body collision detected :(")
     }
 }
+
+changeFoodCoordinates <- function(){
+    food.coordinates <- sample(1:kBoardSize, size = 2)
+    food.x <<- food.coordinates[1]
+    food.y <<- food.coordinates[2]
+}
+
+checkFoodCollision <- function(new.head.x, new.head.y){
+    # Check if food was eaten by comparing head coordinates with food coordinates
+    if(new.head.x == food.x && new.head.y == food.y){
+        print("Delicious food! You grow by one segment.")
+        
+        # Make food new head by adding it to snake's body coordinates
+        snake.body.coordinates <<- rbind(c(food.x, food.y), snake.body.coordinates)
+        return(TRUE)
+    }
+    return(FALSE)
+}
+
 
 moveInDirection <- function(key){
     # Temporary variables
     head.x <- snake.body.coordinates[1, 1]
     head.y <- snake.body.coordinates[1, 2]
-
+    
     switch(key,
            w={
                print('W')
@@ -101,8 +131,12 @@ moveInDirection <- function(key){
                # Don't allow for crossing the borders
                # If collision occurs - abandon move
                if(head.y > 1){
-                   new.head.y <- head.y - 1
-                   crawl(new.head.x, new.head.y)
+                   if(checkFoodCollision(new.head.x, head.y - 1) == T){
+                       changeFoodCoordinates()
+                   }else{
+                       new.head.y <- head.y - 1
+                       crawl(new.head.x, new.head.y)
+                   }
                }else{
                    new.head.y <- head.y
                }
@@ -111,8 +145,12 @@ moveInDirection <- function(key){
                print('S')
                new.head.x <- head.x
                if(head.y < kBoardSize){
-                   new.head.y <- head.y + 1
-                   crawl(new.head.x, new.head.y)
+                   if(checkFoodCollision(new.head.x, head.y + 1) == TRUE){
+                       changeFoodCoordinates()
+                   }else{
+                       new.head.y <- head.y + 1
+                       crawl(new.head.x, new.head.y)
+                   }
                }else{
                    new.head.y <- head.y
                }
@@ -121,8 +159,12 @@ moveInDirection <- function(key){
                print('A')
                new.head.y <- head.y
                if(head.x > 1){
-                   new.head.x <- head.x - 1
-                   crawl(new.head.x, new.head.y)
+                   if(checkFoodCollision(head.x - 1, new.head.y) == TRUE){
+                       changeFoodCoordinates()
+                   }else{
+                       new.head.x <- head.x - 1
+                       crawl(new.head.x, new.head.y)
+                   }
                }else{
                    new.head.x <- head.x
                }
@@ -131,8 +173,12 @@ moveInDirection <- function(key){
                print('D')
                new.head.y <- head.y
                if(head.x < kBoardSize){
-                   new.head.x <- head.x + 1
-                   crawl(new.head.x, new.head.y)
+                   if(checkFoodCollision(head.x + 1, new.head.y) == TRUE){
+                       changeFoodCoordinates()
+                   }else{
+                       new.head.x <- head.x + 1
+                       crawl(new.head.x, new.head.y)
+                   }
                }else{
                    new.head.x <- head.x
                }
@@ -144,7 +190,8 @@ moveInDirection <- function(key){
                # What happens when none of keys listed above were eneterd...
                # Leave empty
            })
-    checkCollisions()
+    
+    checkBodyCollisions()
 }
 
 readKeyboardInput <- function(){
@@ -168,11 +215,14 @@ readKeyboardInput <- function(){
 # Game loop
 repeat{
     clearBoard()
-    #drawBoardGrid()
+    # Commented out because it slows plotting down...
+    # drawBoardGrid()
     drawSnake()
+    drawFood()
     readKeyboardInput()
+    title("Use W, S, A, D to move and ENTER to accept/repeat last action")
     
-    # loop delay
+    # Loop delay - we don't need it really...
     # Sys.sleep(0.7)
 }
 
